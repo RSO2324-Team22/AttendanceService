@@ -1,3 +1,4 @@
+using AttendanceService.Attendance;
 using Microsoft.EntityFrameworkCore;
 
 namespace AttendanceService.Database;
@@ -11,7 +12,7 @@ public class AttendanceDbContext : DbContext {
     public DbSet<RehearsalAttendance> RehearsalAttendances { get; private set; }
 
     public AttendanceDbContext(
-            DbContextOPtions<AttendanceDbContext> options,
+            DbContextOptions<AttendanceDbContext> options,
             ILogger<AttendanceDbContext> logger) : base(options) {
         this._logger = logger;
     }
