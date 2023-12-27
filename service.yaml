@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: attendance-service
+  namespace: default
+  labels:
+    app: attendance-service
+spec:
+  containers:
+    - name: attendance-service
+      image: "pusti/rso2324-team22-attendance-service:latest"
+      ports:
+        - containerPort: 80
+          name:  http
+      env:
+        - name: POSTGRES_SERVER
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: postgres_server
+        - name: POSTGRES_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: postgres_attendance_database
+        - name: POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: postgres_username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: postgres_password
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: attendance-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: attendance-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: http
