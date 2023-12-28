@@ -1,0 +1,32 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  TIMESTAMP: $(date +%s)
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: pusti
+        password: ${{ secrets.DOCKER_TOKEN }}
+    - name: Build the Docker image
+      run: docker buildx build -f Dockerfile --tag pusti/rso2324-team22-attendance-service:test .
+    - name: Make the `latest` tag
+      run: docker buildx build -f Dockerfile --tag pusti/rso2324-team22-attendance-service:latest .
+    - name: Push Docker image
+      run: docker push pusti/rso2324-team22-attendance-service:test
+    - name: Push the `latest` tag
+      run: docker push pusti/rso2324-team22-attendance-service:latest
