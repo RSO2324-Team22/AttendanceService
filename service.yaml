@@ -33,6 +33,12 @@ spec:
             secretKeyRef:
               name: postgres-secrets
               key: postgres_password
+      startupProbe:
+        httpGet:
+          path: /health/startup
+          port: http
+        initialDelaySeconds: 10
+        periodSeconds: 10
       livenessProbe:
         httpGet:
           path: /health/live
