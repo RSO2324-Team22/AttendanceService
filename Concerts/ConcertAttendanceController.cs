@@ -27,7 +27,7 @@ public class ConcertAttendanceController : ControllerBase {
     }
 
     [HttpGet]
-    [Route("concert/[id]")]
+    [Route("[id]")]
     public async Task<IEnumerable<ConcertAttendance>> GetAttendancesForConcert(int concertId) {
         return await this._dbContext.ConcertAttendances
             .Where(ca => ca.Concert.Id == concertId)
@@ -35,7 +35,7 @@ public class ConcertAttendanceController : ControllerBase {
     }
 
     [HttpPost]
-    [Route("concert/[concertId]")]
+    [Route("[concertId]")]
     public async Task<IEnumerable<ConcertAttendance>> CreateAttendances(
             int concertId, 
             List<CreateAttendanceModel> models) {
@@ -69,7 +69,7 @@ public class ConcertAttendanceController : ControllerBase {
     }
 
     [HttpPatch]
-    [Route("concert/[concertId]")]
+    [Route("[concertId]")]
     public async Task<IEnumerable<ConcertAttendance>> ModifyAttendances(
             int concertId, 
             List<CreateConcertAttendanceModel> models) {
