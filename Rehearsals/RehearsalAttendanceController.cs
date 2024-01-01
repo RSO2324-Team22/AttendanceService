@@ -19,12 +19,16 @@ public class RehearsalAttendanceController : ControllerBase {
         this._dbContext = dbContext;
     }
 
+    [HttpGet]
+    [Route("member/[memberId]")]
     public async Task<IEnumerable<RehearsalAttendance>> GetAttendancesForMember(int memberId) {
         return await this._dbContext.RehearsalAttendances
             .Where(a => a.Member.Id == memberId)
             .ToListAsync();
     }
 
+    [HttpGet]
+    [Route("[rehearsalId]")]
     public async Task<IEnumerable<RehearsalAttendance>> GetAttendancesForRehearsal(int rehearsalId) {
         return await this._dbContext.RehearsalAttendances
             .Where(a => a.Rehearsal.Id == rehearsalId)
