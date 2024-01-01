@@ -1,4 +1,4 @@
-namespace AttendanceService.Attendance;
+namespace AttendanceService.Rehearsals;
 
 public enum RehearsalType {
     Regular,
