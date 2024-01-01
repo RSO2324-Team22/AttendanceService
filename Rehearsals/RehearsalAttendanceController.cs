@@ -32,7 +32,7 @@ public class RehearsalAttendanceController : ControllerBase {
     }
 
     [HttpPost]
-    [Route("rehearsal/[rehearsalId]")]
+    [Route("[rehearsalId]")]
     public async Task<IEnumerable<RehearsalAttendance>> CreateAttendances(
             int rehearsalId, 
             List<CreateAttendanceModel> models) {
@@ -66,7 +66,7 @@ public class RehearsalAttendanceController : ControllerBase {
     }
 
     [HttpPatch]
-    [Route("rehearsal/[rehearsalId]")]
+    [Route("[rehearsalId]")]
     public async Task<IEnumerable<RehearsalAttendance>> ModifyAttendances(
             int rehearsalId, 
             List<CreateAttendanceModel> models) {
