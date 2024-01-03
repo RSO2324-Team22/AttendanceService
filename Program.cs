@@ -1,5 +1,8 @@
+using AttendanceService.Background;
 using AttendanceService.Database;
 using AttendanceService.HealthCheck;
+using Confluent.Kafka;
+using GraphQL.Client.Http;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +20,18 @@ string postgres_con_string = $"Host={postgres_server};Username={postgres_usernam
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddKafkaClient();
+
 builder.Services.AddNpgsqlDataSource(postgres_con_string);
 builder.Services.AddDbContext<AttendanceDbContext>(options => {
     options.UseNpgsql(postgres_con_string);
 });
+
+// Background updates
+builder.Services.AddScoped<IDataUpdater, KafkaUpdater>();
+builder.Services.AddSingleton<GraphQLClientFactory>();
+builder.Services.AddHostedService<DataUpdaterBackgroundService>();
+
 builder.Services.AddHealthChecks()
     .AddNpgSql("postgres", tags: new [] { "ready" })
     .AddApplicationStatus("appstatus", tags: new [] { "live" })

@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using AttendanceService.Common;
 using AttendanceService.Database;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +17,7 @@ public class ConcertAttendanceController : ControllerBase {
         this._logger = logger;
         this._dbContext = dbContext;
     }
+
     [HttpGet]
     [Route("member/[id]")]
     public async Task<IEnumerable<ConcertAttendance>> GetAttendancesForMember(int memberId) {
