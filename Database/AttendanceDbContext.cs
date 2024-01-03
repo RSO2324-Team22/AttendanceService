@@ -1,4 +1,6 @@
-using AttendanceService.Attendance;
+using AttendanceService.Common;
+using AttendanceService.Concerts;
+using AttendanceService.Rehearsals;
 using Microsoft.EntityFrameworkCore;
 
 namespace AttendanceService.Database;
@@ -6,6 +8,7 @@ namespace AttendanceService.Database;
 public class AttendanceDbContext : DbContext {
     private readonly ILogger<AttendanceDbContext> _logger;
 
+    public DbSet<Member> Members { get; private set; }
     public DbSet<Concert> Concerts { get; private set; }
     public DbSet<Rehearsal> Rehearsals { get; private set; }
     public DbSet<ConcertAttendance> ConcertAttendances { get; private set; }
