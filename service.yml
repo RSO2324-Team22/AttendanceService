@@ -33,6 +33,16 @@ spec:
             secretKeyRef:
               name: postgres-secrets
               key: postgres_password
+        - name: PlanningService__GraphQL__Url
+          value: "$(PLANNING_SERVICE_SERVICE_HOST)/graphql"
+        - name: PlanningService__GraphQL__Port
+          value: "$(PLANNING_SERVICE_SERVICE_PORT)"
+        - name: MembersService__GraphQL__Url
+          value: "$(MEMBERS_SERVICE_SERVICE_HOST)/graphql"
+        - name: MembersService__GraphQL__Port
+          value: "$(MEMBERS_SERVICE_SERVICE_PORT)"
+        - name: Kafka__Consumer__bootstrap__servers
+          value: "$(KAFKA_SERVICE_HOST):$(KAFKA_SERVICE_PORT)"
       startupProbe:
         httpGet:
           path: /health/startup
