@@ -2,7 +2,6 @@ using AttendanceService.Background;
 using AttendanceService.Database;
 using AttendanceService.HealthCheck;
 using Confluent.Kafka;
-using GraphQL.Client.Http;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;

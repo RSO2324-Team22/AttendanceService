@@ -1,5 +1,7 @@
 using AttendanceService.Common;
+using AttendanceService.Concerts;
 using AttendanceService.Database;
+using AttendanceService.Rehearsals;
 using Confluent.Kafka;
 using GraphQL;
 using GraphQL.Client.Abstractions;
@@ -49,10 +51,10 @@ public class KafkaUpdater : IDataUpdater {
                 await this.ProcessMembersMessage(message, stoppingToken);
                 break;
             case "concerts":
-                await this.ProcessConcertsMessage(message, stoppingToken);
+                await this.ProcessConcertMessage(message, stoppingToken);
                 break;
             case "rehearsals":
-                await this.ProcessRehearsalsMessage(message, stoppingToken);
+                await this.ProcessRehearsalMessage(message, stoppingToken);
                 break;
         }
 
@@ -107,16 +109,100 @@ public class KafkaUpdater : IDataUpdater {
         this._dbContext.Remove(member);
     }
 
-    private async Task ProcessConcertsMessage(
+    private async Task ProcessConcertMessage(
             Message<string, int> message,
             CancellationToken stoppingToken) {
+        string key = message.Key;
+        int memberId = message.Value;
+        switch (key) {
+            case "add_concert":                
+                await this.AddConcertAsync(memberId);
+                break;
+            case "edit_concert":
+                await this.EditConcertAsync(memberId);
+                break;
+            case "delete_concert":
+                await this.DeleteConcertAsync(memberId);
+                break;
+        } 
 
+        await this._dbContext.SaveChangesAsync();
     }
 
-    private async Task ProcessRehearsalsMessage(
+    private async Task AddConcertAsync(int concertId) {
+        GraphQLRequest query = this.MakeConcertQuery(concertId);
+        GraphQLResponse<Concert> response = 
+            await this._planningGraphQLClient.SendQueryAsync<Concert>(query);
+        Concert concert = response.Data;
+        this._dbContext.Add(concert);
+    }
+
+    private async Task EditConcertAsync(int concertId) {
+        Concert concert = await this._dbContext.Concerts
+            .Where(m => m.Id == concertId)
+            .SingleAsync();
+
+        GraphQLRequest query = this.MakeConcertQuery(concertId);
+        GraphQLResponse<Concert> response = 
+            await this._planningGraphQLClient.SendQueryAsync<Concert>(query);
+        concert.Name = response.Data.Name;
+        this._dbContext.Add(concert);
+    }
+
+    private async Task DeleteConcertAsync(int concertId) {
+        Concert concert = await this._dbContext.Concerts
+            .Where(m => m.Id == concertId)
+            .SingleAsync();
+        
+        this._dbContext.Remove(concert);
+    }
+
+    private async Task ProcessRehearsalMessage(
             Message<string, int> message,
             CancellationToken stoppingToken) {
+        string key = message.Key;
+        int memberId = message.Value;
+        switch (key) {
+            case "add_rehearsal":                
+                await this.AddRehearsalAsync(memberId);
+                break;
+            case "edit_rehearsal":
+                await this.EditRehearsalAsync(memberId);
+                break;
+            case "delete_rehearsal":
+                await this.DeleteRehearsalAsync(memberId);
+                break;
+        } 
 
+        await this._dbContext.SaveChangesAsync();
+    }
+
+    private async Task AddRehearsalAsync(int rehearsalId) {
+        GraphQLRequest query = this.MakeRehearsalQuery(rehearsalId);
+        GraphQLResponse<Rehearsal> response = 
+            await this._planningGraphQLClient.SendQueryAsync<Rehearsal>(query);
+        Rehearsal rehearsal = response.Data;
+        this._dbContext.Add(rehearsal);
+    }
+
+    private async Task EditRehearsalAsync(int rehearsalId) {
+        Rehearsal rehearsal = await this._dbContext.Rehearsals
+            .Where(m => m.Id == rehearsalId)
+            .SingleAsync();
+
+        GraphQLRequest query = this.MakeRehearsalQuery(rehearsalId);
+        GraphQLResponse<Rehearsal> response = 
+            await this._planningGraphQLClient.SendQueryAsync<Rehearsal>(query);
+        rehearsal.Name = response.Data.Name;
+        this._dbContext.Add(rehearsal);
+    }
+
+    private async Task DeleteRehearsalAsync(int rehearsalId) {
+        Rehearsal rehearsal = await this._dbContext.Rehearsals
+            .Where(m => m.Id == rehearsalId)
+            .SingleAsync();
+        
+        this._dbContext.Remove(rehearsal);
     }
 
     private GraphQLRequest MakeMemberQuery(int id) {
@@ -126,9 +212,38 @@ public class KafkaUpdater : IDataUpdater {
                     Member(id: $id) {
                         Id Name 
                     }
-                }
-                ",
+                }",
             OperationName = "GetMember",
+            Variables = new {
+                id = id
+            }
+        };
+    }
+
+    private GraphQLRequest MakeConcertQuery(int id) {
+        return new GraphQLRequest {
+            Query = @"
+                query GetConcert($id: ID) {
+                    Concert(id: $id) {
+                        Id Name 
+                    }
+                }",
+            OperationName = "GetConcerts",
+            Variables = new {
+                id = id
+            }
+        };
+    }
+
+    private GraphQLRequest MakeRehearsalQuery(int id) {
+        return new GraphQLRequest {
+            Query = @"
+                query GetRehearsal($id: ID) {
+                    Rehearsal(id: $id) {
+                        Id Name 
+                    }
+                }",
+            OperationName = "GetRehearsal",
             Variables = new {
                 id = id
             }
