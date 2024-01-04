@@ -42,24 +42,24 @@ public class KafkaUpdater : IDataUpdater {
         GraphQLRequest query = this.MakeAllMembersQuery();
         GraphQLResponse<List<Member>> response = 
             await this._membersGraphQLClient.SendQueryAsync<List<Member>>(query);
-        List<Member> members = response.Data;
-        this._dbContext.Add(members);
+        List<Member> members = response.Data ?? new List<Member>();
+        this._dbContext.AddRange(members);
     }
 
     private async Task FetchConcertsAsync() {
         GraphQLRequest query = this.MakeAllConcertsQuery();
         GraphQLResponse<List<Concert>> response = 
             await this._concertGraphQLClient.SendQueryAsync<List<Concert>>(query);
-        List<Concert> concerts = response.Data;
-        this._dbContext.Add(concerts);
+        List<Concert> concerts = response.Data ?? new List<Concert>();
+        this._dbContext.AddRange(concerts);
     }
 
     private async Task FetchRehearsalsAsync() {
         GraphQLRequest query = this.MakeAllRehearsalsQuery();
         GraphQLResponse<List<Rehearsal>> response = 
             await this._rehearsalGraphQLClient.SendQueryAsync<List<Rehearsal>>(query);
-        List<Rehearsal> rehearsals = response.Data;
-        this._dbContext.Add(rehearsals);
+        List<Rehearsal> rehearsals = response.Data ?? new List<Rehearsal>();
+        this._dbContext.AddRange(rehearsals);
     }
 
     private GraphQLRequest MakeAllMembersQuery() {
@@ -103,10 +103,11 @@ public class KafkaUpdater : IDataUpdater {
         this._kafkaConsumer.Subscribe(topics);
 
         while(!stoppingToken.IsCancellationRequested) {
-            ConsumeResult<string, int> result = this._kafkaConsumer.Consume(stoppingToken);
+            ConsumeResult<string, int> result = this._kafkaConsumer.Consume(10);
             if (result.Message != null) {
                 await this.ProcessMessage(result.Topic, result.Message, stoppingToken);
             }
+            await Task.Delay(10000);
         }
 
         this._logger.LogInformation("Kafka consumer loop has stopped");
