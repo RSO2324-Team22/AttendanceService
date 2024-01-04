@@ -73,7 +73,7 @@ public class ConcertAttendanceController : ControllerBase {
     }
 
     [HttpPatch]
-    [Route("[concertId]")]
+    [Route("{concertId}")]
     [SwaggerOperation("EditAttendances")]
     public async Task<IEnumerable<ConcertAttendance>> EditAttendances(
             int concertId, 
