@@ -31,11 +31,16 @@ public class KafkaUpdater : IDataUpdater {
     }
 
     public async Task FetchDataAsync(CancellationToken stoppingToken) {
-        await this._dbContext.Database.EnsureCreatedAsync();
-        await this.FetchMembersAsync();
-        await this.FetchConcertsAsync();
-        await this.FetchMembersAsync();
-        await this._dbContext.SaveChangesAsync();
+        try {
+            await this._dbContext.Database.EnsureCreatedAsync();
+            await this.FetchMembersAsync();
+            await this.FetchConcertsAsync();
+            await this.FetchMembersAsync();
+            await this._dbContext.SaveChangesAsync();
+        }
+        catch (Exception e) {
+            this._logger.LogError("Error while fetching data.\n", e.Message);
+        }
     }
 
     private async Task FetchMembersAsync() {
