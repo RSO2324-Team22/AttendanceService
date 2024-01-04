@@ -31,11 +31,16 @@ public class KafkaUpdater : IDataUpdater {
     }
 
     public async Task FetchDataAsync(CancellationToken stoppingToken) {
-        await this._dbContext.Database.EnsureCreatedAsync();
-        await this.FetchMembersAsync();
-        await this.FetchConcertsAsync();
-        await this.FetchMembersAsync();
-        await this._dbContext.SaveChangesAsync();
+        try {
+            await this._dbContext.Database.EnsureCreatedAsync();
+            await this.FetchMembersAsync();
+            await this.FetchConcertsAsync();
+            await this.FetchMembersAsync();
+            await this._dbContext.SaveChangesAsync();
+        }
+        catch (Exception e) {
+            this._logger.LogError("Error while fetching data.\n", e.Message);
+        }
     }
 
     private async Task FetchMembersAsync() {
@@ -66,8 +71,10 @@ public class KafkaUpdater : IDataUpdater {
         return new GraphQLRequest {
             Query = @"
                 query GetAllMembers {
-                    All {
-                        Id Name 
+                    members {
+                        All {
+                            Id Name 
+                        }
                     }
                 }",
             OperationName = "GetAllMembers",
@@ -78,8 +85,10 @@ public class KafkaUpdater : IDataUpdater {
         return new GraphQLRequest {
             Query = @"
                 query GetAllConcerts {
-                    All {
-                        Id Name 
+                    concerts {
+                        All {
+                            Id Name 
+                        }
                     }
                 }",
             OperationName = "GetAllConcerts",
@@ -90,8 +99,10 @@ public class KafkaUpdater : IDataUpdater {
         return new GraphQLRequest {
             Query = @"
                 query GetAllRehearsals {
-                    All {
-                        Id Name 
+                    rehearsals {
+                        All {
+                            Id Name 
+                        }
                     }
                 }",
             OperationName = "GetAllRehearsals",
