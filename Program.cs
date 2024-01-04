@@ -2,6 +2,7 @@ using AttendanceService.Background;
 using AttendanceService.Database;
 using AttendanceService.HealthCheck;
 using Confluent.Kafka;
+using Confluent.Kafka.Options;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ using Serilog.Events;
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json")
+    .AddEnvironmentVariables()
     .Build();
 
 Log.Logger = new LoggerConfiguration()
@@ -28,9 +30,15 @@ string postgres_con_string = $"Host={postgres_server};Username={postgres_usernam
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddKafkaClient();
+builder.Services.AddKafkaClient()
+    .Configure(options => {
+        options.Configure(new ConsumerConfig {
+            BootstrapServers = configuration["KAFKA_URL"]
+        }); 
+});
 
 builder.Services.AddNpgsqlDataSource(postgres_con_string);
 builder.Services.AddDbContext<AttendanceDbContext>(options => {
