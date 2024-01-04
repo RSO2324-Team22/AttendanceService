@@ -40,6 +40,7 @@ builder.Services.AddDbContext<AttendanceDbContext>(options => {
 // Background updates
 builder.Services.AddScoped<IDataUpdater, KafkaUpdater>();
 builder.Services.AddSingleton<GraphQLClientFactory>();
+builder.Services.AddHostedService<DataFetchService>();
 builder.Services.AddHostedService<DataUpdaterBackgroundService>();
 
 builder.Services.AddHealthChecks()

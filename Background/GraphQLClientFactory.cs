@@ -24,12 +24,21 @@ public class GraphQLClientFactory {
             new SystemTextJsonSerializer());
     }
 
-    public IGraphQLClient GetPlanningGraphQLClient() {
+    public IGraphQLClient GetConcertGraphQLClient() {
         string planningGraphQLUrl = this._config["PlanningService:GraphQL:Url"] ?? "";
         int planningGraphQLPort = int.Parse(this._config["PlanningService:GraphQL:Port"] ?? "");
         
         return new GraphQLHttpClient(
-            planningGraphQLUrl + ":" + planningGraphQLPort, 
+            planningGraphQLUrl + "/concert" + ":" + planningGraphQLPort, 
+            new SystemTextJsonSerializer());
+    }
+
+    public IGraphQLClient GetRehearsalGraphQLClient() {
+        string planningGraphQLUrl = this._config["PlanningService:GraphQL:Url"] ?? "";
+        int planningGraphQLPort = int.Parse(this._config["PlanningService:GraphQL:Port"] ?? "");
+        
+        return new GraphQLHttpClient(
+            planningGraphQLUrl + "/rehearsal" + ":" + planningGraphQLPort, 
             new SystemTextJsonSerializer());
     }
 }

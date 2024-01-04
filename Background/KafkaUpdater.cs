@@ -14,7 +14,8 @@ public class KafkaUpdater : IDataUpdater {
     private readonly AttendanceDbContext _dbContext;
     private readonly IConsumer<string, int> _kafkaConsumer;
     private readonly IGraphQLClient _membersGraphQLClient;
-    private readonly IGraphQLClient _planningGraphQLClient;
+    private readonly IGraphQLClient _concertGraphQLClient;
+    private readonly IGraphQLClient _rehearsalGraphQLClient;
 
     public KafkaUpdater(
             ILogger<KafkaUpdater> logger,
@@ -25,7 +26,76 @@ public class KafkaUpdater : IDataUpdater {
         this._dbContext = dbContext;
         this._kafkaConsumer = kafkaConsumer;
         this._membersGraphQLClient = graphQLFactory.GetMembersGraphQLClient();
-        this._planningGraphQLClient = graphQLFactory.GetPlanningGraphQLClient();
+        this._concertGraphQLClient = graphQLFactory.GetConcertGraphQLClient();
+        this._rehearsalGraphQLClient = graphQLFactory.GetRehearsalGraphQLClient();
+    }
+
+    public async Task FetchDataAsync(CancellationToken stoppingToken) {
+        await this._dbContext.Database.EnsureCreatedAsync();
+        await this.FetchMembersAsync();
+        await this.FetchConcertsAsync();
+        await this.FetchMembersAsync();
+        await this._dbContext.SaveChangesAsync();
+    }
+
+    private async Task FetchMembersAsync() {
+        GraphQLRequest query = this.MakeAllMembersQuery();
+        GraphQLResponse<List<Member>> response = 
+            await this._membersGraphQLClient.SendQueryAsync<List<Member>>(query);
+        List<Member> members = response.Data;
+        this._dbContext.Add(members);
+    }
+
+    private async Task FetchConcertsAsync() {
+        GraphQLRequest query = this.MakeAllConcertsQuery();
+        GraphQLResponse<List<Concert>> response = 
+            await this._concertGraphQLClient.SendQueryAsync<List<Concert>>(query);
+        List<Concert> concerts = response.Data;
+        this._dbContext.Add(concerts);
+    }
+
+    private async Task FetchRehearsalsAsync() {
+        GraphQLRequest query = this.MakeAllRehearsalsQuery();
+        GraphQLResponse<List<Rehearsal>> response = 
+            await this._rehearsalGraphQLClient.SendQueryAsync<List<Rehearsal>>(query);
+        List<Rehearsal> rehearsals = response.Data;
+        this._dbContext.Add(rehearsals);
+    }
+
+    private GraphQLRequest MakeAllMembersQuery() {
+        return new GraphQLRequest {
+            Query = @"
+                query GetAllMembers {
+                    All {
+                        Id Name 
+                    }
+                }",
+            OperationName = "GetAllMembers",
+        };
+    }
+
+    private GraphQLRequest MakeAllConcertsQuery() {
+        return new GraphQLRequest {
+            Query = @"
+                query GetAllConcerts {
+                    All {
+                        Id Name 
+                    }
+                }",
+            OperationName = "GetAllConcerts",
+        };
+    }
+
+    private GraphQLRequest MakeAllRehearsalsQuery() {
+        return new GraphQLRequest {
+            Query = @"
+                query GetAllRehearsals {
+                    All {
+                        Id Name 
+                    }
+                }",
+            OperationName = "GetAllRehearsals",
+        };
     }
 
     public async Task LoopAsync(CancellationToken stoppingToken) {
@@ -132,7 +202,7 @@ public class KafkaUpdater : IDataUpdater {
     private async Task AddConcertAsync(int concertId) {
         GraphQLRequest query = this.MakeConcertQuery(concertId);
         GraphQLResponse<Concert> response = 
-            await this._planningGraphQLClient.SendQueryAsync<Concert>(query);
+            await this._concertGraphQLClient.SendQueryAsync<Concert>(query);
         Concert concert = response.Data;
         this._dbContext.Add(concert);
     }
@@ -144,7 +214,7 @@ public class KafkaUpdater : IDataUpdater {
 
         GraphQLRequest query = this.MakeConcertQuery(concertId);
         GraphQLResponse<Concert> response = 
-            await this._planningGraphQLClient.SendQueryAsync<Concert>(query);
+            await this._concertGraphQLClient.SendQueryAsync<Concert>(query);
         concert.Name = response.Data.Name;
         this._dbContext.Add(concert);
     }
@@ -180,7 +250,7 @@ public class KafkaUpdater : IDataUpdater {
     private async Task AddRehearsalAsync(int rehearsalId) {
         GraphQLRequest query = this.MakeRehearsalQuery(rehearsalId);
         GraphQLResponse<Rehearsal> response = 
-            await this._planningGraphQLClient.SendQueryAsync<Rehearsal>(query);
+            await this._rehearsalGraphQLClient.SendQueryAsync<Rehearsal>(query);
         Rehearsal rehearsal = response.Data;
         this._dbContext.Add(rehearsal);
     }
@@ -192,7 +262,7 @@ public class KafkaUpdater : IDataUpdater {
 
         GraphQLRequest query = this.MakeRehearsalQuery(rehearsalId);
         GraphQLResponse<Rehearsal> response = 
-            await this._planningGraphQLClient.SendQueryAsync<Rehearsal>(query);
+            await this._rehearsalGraphQLClient.SendQueryAsync<Rehearsal>(query);
         rehearsal.Name = response.Data.Name;
         this._dbContext.Add(rehearsal);
     }
