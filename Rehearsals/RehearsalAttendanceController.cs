@@ -3,6 +3,7 @@ using AttendanceService.Common;
 using AttendanceService.Database;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace AttendanceService.Rehearsals;
 
@@ -20,7 +21,8 @@ public class RehearsalAttendanceController : ControllerBase {
     }
 
     [HttpGet]
-    [Route("member/[memberId]")]
+    [Route("member/{memberId}")]
+    [SwaggerOperation("GetAttendancesForMember")]
     public async Task<IEnumerable<RehearsalAttendance>> GetAttendancesForMember(int memberId) {
         return await this._dbContext.RehearsalAttendances
             .Where(a => a.Member.Id == memberId)
@@ -28,7 +30,8 @@ public class RehearsalAttendanceController : ControllerBase {
     }
 
     [HttpGet]
-    [Route("[rehearsalId]")]
+    [Route("{rehearsalId}")]
+    [SwaggerOperation("GetAttendancesForRehearsal")]
     public async Task<IEnumerable<RehearsalAttendance>> GetAttendancesForRehearsal(int rehearsalId) {
         return await this._dbContext.RehearsalAttendances
             .Where(a => a.Rehearsal.Id == rehearsalId)
@@ -36,7 +39,8 @@ public class RehearsalAttendanceController : ControllerBase {
     }
 
     [HttpPost]
-    [Route("[rehearsalId]")]
+    [Route("{rehearsalId}")]
+    [SwaggerOperation("CreateAttendances")]
     public async Task<IEnumerable<RehearsalAttendance>> CreateAttendances(
             int rehearsalId, 
             List<CreateAttendanceModel> models) {
@@ -70,8 +74,9 @@ public class RehearsalAttendanceController : ControllerBase {
     }
 
     [HttpPatch]
-    [Route("[rehearsalId]")]
-    public async Task<IEnumerable<RehearsalAttendance>> ModifyAttendances(
+    [Route("{rehearsalId}")]
+    [SwaggerOperation("EditAttendances")]
+    public async Task<IEnumerable<RehearsalAttendance>> EditAttendances(
             int rehearsalId, 
             List<CreateAttendanceModel> models) {
         Rehearsal rehearsal = await this._dbContext.Rehearsals
