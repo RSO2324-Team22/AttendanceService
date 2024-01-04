@@ -66,8 +66,10 @@ public class KafkaUpdater : IDataUpdater {
         return new GraphQLRequest {
             Query = @"
                 query GetAllMembers {
-                    All {
-                        Id Name 
+                    members {
+                        All {
+                            Id Name 
+                        }
                     }
                 }",
             OperationName = "GetAllMembers",
@@ -78,8 +80,10 @@ public class KafkaUpdater : IDataUpdater {
         return new GraphQLRequest {
             Query = @"
                 query GetAllConcerts {
-                    All {
-                        Id Name 
+                    concerts {
+                        All {
+                            Id Name 
+                        }
                     }
                 }",
             OperationName = "GetAllConcerts",
@@ -90,8 +94,10 @@ public class KafkaUpdater : IDataUpdater {
         return new GraphQLRequest {
             Query = @"
                 query GetAllRehearsals {
-                    All {
-                        Id Name 
+                    rehearsals {
+                        All {
+                            Id Name 
+                        }
                     }
                 }",
             OperationName = "GetAllRehearsals",
