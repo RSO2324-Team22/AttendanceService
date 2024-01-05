@@ -115,7 +115,7 @@ public class KafkaUpdater : IDataUpdater {
 
         while(!stoppingToken.IsCancellationRequested) {
             ConsumeResult<string, int> result = this._kafkaConsumer.Consume(10);
-            if (result.Message != null) {
+            if (result is { Message: not null }) {
                 await this.ProcessMessage(result.Topic, result.Message, stoppingToken);
             }
             await Task.Delay(10000);
