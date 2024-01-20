@@ -25,9 +25,7 @@ public class Program
 
     private static void ConfigureBuilder(WebApplicationBuilder builder)
     {
-        builder.Services.AddControllers();
-        builder.Services.AddHttpContextAccessor();
-
+        ConfigureApplication(builder);
         ConfigureHttpClients(builder);
         ConfigureLogging(builder);
         ConfigureKafka(builder);
@@ -35,6 +33,12 @@ public class Program
         ConfigureBackgroundServices(builder);
         ConfigureDatabase(builder);
         ConfigureMetrics(builder);
+    }
+
+    private static void ConfigureApplication(WebApplicationBuilder builder)
+    {
+        builder.Services.AddControllers();
+        builder.Services.AddHttpContextAccessor();
     }
 
     private static void ConfigureHttpClients(WebApplicationBuilder builder) {
