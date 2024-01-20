@@ -22,5 +22,7 @@ public class DataFetchService : IHostedService
         }
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken) {}
+    public Task StopAsync(CancellationToken cancellationToken) {
+        return Task.CompletedTask;
+    }
 }

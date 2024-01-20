@@ -20,29 +20,34 @@ public class ConcertAttendanceController : ControllerBase {
     }
 
     [HttpGet]
-    [Route("member/{id}")]
+    [Route("member/{memberId}")]
     [SwaggerOperation("GetAttendanceForMember")]
     public async Task<IEnumerable<ConcertAttendance>> GetAttendancesForMember(int memberId) {
+        this._logger.LogInformation("Getting attendances for member {id}", memberId);
         return await this._dbContext.ConcertAttendances
             .Where(ca => ca.Member.Id == memberId)
             .ToListAsync();
     }
 
     [HttpGet]
-    [Route("{id}")]
+    [Route("concert/{concertId}")]
+    [Route("{concertId}")]
     [SwaggerOperation("GetAttendancesForConcert")]
     public async Task<IEnumerable<ConcertAttendance>> GetAttendancesForConcert(int concertId) {
+        this._logger.LogInformation("Getting attendances for concert {id}", concertId);
         return await this._dbContext.ConcertAttendances
             .Where(ca => ca.Concert.Id == concertId)
             .ToListAsync();
     }
 
     [HttpPost]
+    [Route("concert/{concertId}")]
     [Route("{concertId}")]
     [SwaggerOperation("CreateAttendances")]
-    public async Task<IResult> CreateAttendances(
+    public async Task<ActionResult<IEnumerable<ConcertAttendance>>> CreateAttendances(
             int concertId, 
             List<CreateAttendanceModel> models) {
+        this._logger.LogInformation("Adding attendance for concert {id}", concertId);
         try
         {
             Concert concert = await this._dbContext.Concerts
@@ -59,35 +64,44 @@ public class ConcertAttendanceController : ControllerBase {
 
             List<ConcertAttendance> attendances = new List<ConcertAttendance>();
             foreach (Member member in members) {
-                CreateAttendanceModel model = models.Find(m => m.MemberId == member.Id);
-                ConcertAttendance attendance = new ConcertAttendance() {
-                    Member = member,
-                    Concert = concert,
-                    IsPresent = model.IsPresent,
-                    ReasonForAbsence = model.ReasonForAbsence
-                };
-                this._dbContext.Add(attendance);
-                attendances.Add(attendance);
+                CreateAttendanceModel? model = models.Find(m => m.MemberId == member.Id);
+                if (model is null) {
+                    this._logger.LogInformation("Attendance for concert {concertId} and member {memberId} was not given",
+                                                concertId, member.Id);
+                    return BadRequest($"Attendance for concert {concertId} and member {member.Id} was not given");
+                }
+                else {
+                    ConcertAttendance attendance = new ConcertAttendance() {
+                        Member = member,
+                        Concert = concert,
+                        IsPresent = model.IsPresent,
+                        ReasonForAbsence = model.ReasonForAbsence
+                    };
+                    this._dbContext.Add(attendance);
+                    attendances.Add(attendance);
+                }
             }
 
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Created new concert attendance");
-            return Results.Created(nameof(Index), attendances);;
+            return CreatedAtAction(nameof(GetAttendancesForConcert),
+                                   new { concertId = concertId });
         }
         catch (Exception e)
         {
-            const string errMsg = "There was an error adding new concert attendance";
-            this._logger.LogError(e, errMsg);
-            return Results.BadRequest(errMsg);
+            this._logger.LogError(e, "There was an error adding concert attendance for concert {id}", concertId);
+            return BadRequest($"There was an error adding concert attendance for concert {concertId}");
         }
     }
 
     [HttpPatch]
+    [Route("concert/{concertId}")]
     [Route("{concertId}")]
     [SwaggerOperation("EditAttendances")]
-    public async Task<IResult> EditAttendances(
+    public async Task<ActionResult<IEnumerable<ConcertAttendance>>> EditAttendances(
             int concertId, 
-            List<CreateConcertAttendanceModel> models) {
+            List<CreateAttendanceModel> models) {
+        this._logger.LogInformation("Editing attendance for concert {id}", concertId);
         try
         {
             Concert concert = await this._dbContext.Concerts
@@ -107,20 +121,34 @@ public class ConcertAttendanceController : ControllerBase {
                 .ToListAsync();
 
             foreach (Member member in members) {
-                CreateConcertAttendanceModel model = models.Find(m => m.MemberId == member.Id);
-                ConcertAttendance attendance = attendances.Find(a => a.Member == member);
-                attendance.IsPresent = model.IsPresent;
-                attendance.ReasonForAbsence = model.ReasonForAbsence;
+                CreateAttendanceModel? model = models.Find(m => m.MemberId == member.Id);
+                if (model is null) {
+                    this._logger.LogInformation("Attendance for concert {concertId} and member {memberId} was not given",
+                                                concertId, member.Id);
+                    return BadRequest($"Attendance for concert {concertId} and member {member.Id} was not given");
+                }
+                else {
+                    ConcertAttendance? attendance = attendances.Find(a => a.Member == member);
+                    if (attendance is null) {
+                        this._logger.LogInformation("Attendance for concert {concertId} and member {memberId} was not found",
+                                                    concertId, member.Id);
+                        return BadRequest($"Attendance for concert {concertId} and meber {member.Id} was not found");
+                    }
+                    else {
+                        attendance.IsPresent = model.IsPresent;
+                        attendance.ReasonForAbsence = model.ReasonForAbsence;
+                    }
+                }
             }
 
             await this._dbContext.SaveChangesAsync();
-            this._logger.LogInformation("Edited concert attendance with id: {id}", concertId);
-            return Results.Ok(attendances);
+            this._logger.LogInformation("Edited concert attendance for concert {id}", concertId);
+            return Ok(attendances);
         }
         catch (Exception e)
         {
-            this._logger.LogError(e, "There was an error editing concert attendance {id}", concertId);
-            return Results.BadRequest($"There was an error deleting concert attendance {concertId}");
+            this._logger.LogError(e, "There was an error editing concert attendance for concert {id}", concertId);
+            return BadRequest($"There was an error deleting concert attendance {concertId}");
         }
     }
 }
