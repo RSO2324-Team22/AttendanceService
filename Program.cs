@@ -9,7 +9,7 @@ using Serilog.Events;
 
 public class Program
 {
-    private const string DbConnectionStringName = "AttendanceDatabase";
+    private const string DbConnectionStringName = "Database";
 
     public static void Main(string[] args)
     {
