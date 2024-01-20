@@ -69,8 +69,7 @@ public class Program
     {
         builder.Host.UseSerilog((context, config) => {
             config.ReadFrom.Configuration(builder.Configuration)
-                .Enrich.WithCorrelationIdHeader("X-Correlation-Id")
-                .CreateLogger();
+                .Enrich.WithCorrelationIdHeader("X-Correlation-Id");
         });
     }
 
