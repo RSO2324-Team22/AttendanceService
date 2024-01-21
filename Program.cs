@@ -1,8 +1,12 @@
 using AttendanceService.Background;
 using AttendanceService.Database;
 using Confluent.Kafka;
+using HealthChecks.ApplicationStatus.DependencyInjection;
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using Serilog;
 using Serilog.Events;
@@ -33,6 +37,7 @@ public class Program
         ConfigureBackgroundServices(builder);
         ConfigureDatabase(builder);
         ConfigureMetrics(builder);
+        ConfigureHealthChecks(builder);
     }
 
     private static void ConfigureApplication(WebApplicationBuilder builder)
@@ -126,6 +131,27 @@ public class Program
             });
     }
 
+    private static void ConfigureHealthChecks(WebApplicationBuilder builder) {
+        builder.Services.AddHealthChecks()
+            .AddDbContextCheck<AttendanceDbContext>(
+                    tags: new [] {"ready"},
+                    failureStatus: HealthStatus.Unhealthy)
+            .AddApplicationStatus(
+                    tags: new [] {"live"}, 
+                    failureStatus: HealthStatus.Unhealthy);
+
+        string? urlsEnv = builder.Configuration["ASPNETCORE_URLS"];
+        List<string> urls = urlsEnv?.Split(",").ToList() ?? new List<string>();
+        builder.Services
+            .AddHealthChecksUI(setup => {
+                for (int i = 0; i < urls.Count; i++) {
+                    setup.AddHealthCheckEndpoint($"live{i}", $"{urls[i]}/health/live");
+                    setup.AddHealthCheckEndpoint($"ready{i}", $"{urls[i]}/health/ready");
+                }
+            })
+            .AddInMemoryStorage();
+    }
+
     private static void InitializeDatabase(WebApplication app)
     {
         IServiceScopeFactory scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
@@ -150,6 +176,7 @@ public class Program
 
         ConfigureWebApplication(app);
         ConfigureApplicationLogging(app);
+        ConfigureApplicationHealthChecks(app);
     }
 
     private static void ConfigureSwaggerUI(WebApplication app)
@@ -200,5 +227,18 @@ public class Program
                 diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
             };
         });
+    }
+
+    private static void ConfigureApplicationHealthChecks(WebApplication app) {
+        app.MapHealthChecks("/health/live", new HealthCheckOptions {
+            Predicate = check => check.Tags.Contains("live"),
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+        app.MapHealthChecks("/health/ready", new HealthCheckOptions {
+            Predicate = check => check.Tags.Contains("ready"),
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+        app.UseHealthChecksPrometheusExporter("/healthmetrics");
+        app.MapHealthChecksUI();
     }
 }
