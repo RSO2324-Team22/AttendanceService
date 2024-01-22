@@ -134,7 +134,8 @@ public class Program
             .Configure(options => {
                 options.Configure(new ConsumerConfig {
                     BootstrapServers = kafkaUrl
-                }).Serialize(new JsonMessageSerializer<KafkaMessage>());
+                }).Serialize(new JsonMessageSerializer<KafkaMessage>())
+                  .Deserialize(new JsonMessageSerializer<KafkaMessage>());
             });
     }
 
