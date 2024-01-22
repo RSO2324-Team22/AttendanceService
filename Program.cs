@@ -1,5 +1,10 @@
 using AttendanceService.Background;
+using AttendanceService.Common;
+using AttendanceService.Concerts;
 using AttendanceService.Database;
+using AttendanceService.GraphQL;
+using AttendanceService.Members;
+using AttendanceService.Rehearsals;
 using Confluent.Kafka;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using HealthChecks.UI.Client;
@@ -8,6 +13,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
+using Polly;
+using Polly.Extensions.Http;
+using Polly.Retry;
 using Serilog;
 using Serilog.Events;
 
@@ -31,6 +39,7 @@ public class Program
     {
         ConfigureApplication(builder);
         ConfigureHttpClients(builder);
+        ConfigureGraphQLClients(builder);
         ConfigureLogging(builder);
         ConfigureKafka(builder);
         ConfigureOpenApi(builder);
@@ -47,27 +56,38 @@ public class Program
     }
 
     private static void ConfigureHttpClients(WebApplicationBuilder builder) {
+        IAsyncPolicy<HttpResponseMessage> retryPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+
+        IAsyncPolicy<HttpResponseMessage> circuitBreakerPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
+
         builder.Services.AddHeaderPropagation(options => {
             options.Headers.Add("X-Correlation-Id");
         });
 
-        string? graphql_members_base = builder.Configuration["MembersService:GraphQL:Url"];
-        string? graphql_planning_base = builder.Configuration["PlanningService:GraphQL:Url"];
-
         builder.Services.AddHttpClient("graphql_members", client => {
-            client.BaseAddress = new Uri(graphql_members_base
+            client.BaseAddress = new Uri(builder.Configuration["MembersService:GraphQL:Url"]
                 ?? throw new Exception("MembersService:GraphQL:Url config value is missing"));
-        }).AddHeaderPropagation();
+        }).AddHeaderPropagation()
+          .AddPolicyHandler(retryPolicy)
+          .AddPolicyHandler(circuitBreakerPolicy);
 
-        builder.Services.AddHttpClient("graphql_concerts", client => {
-            client.BaseAddress = new Uri(graphql_planning_base
+        builder.Services.AddHttpClient("graphql_planning", client => {
+            client.BaseAddress = new Uri(builder.Configuration["PlanningService:GraphQL:Url"]
                 ?? throw new Exception("PlanningService:GraphQL:Url config value is missing"));
-        }).AddHeaderPropagation();
-        
-        builder.Services.AddHttpClient("graphql_rehearsals", client => {
-            client.BaseAddress = new Uri(graphql_planning_base
-                ?? throw new Exception("PlanningService:GraphQL:Url config value is missing"));
-        }).AddHeaderPropagation();
+        }).AddHeaderPropagation()
+          .AddPolicyHandler(retryPolicy)
+          .AddPolicyHandler(circuitBreakerPolicy);
+    }
+
+    private static void ConfigureGraphQLClients(WebApplicationBuilder builder) {
+        builder.Services.AddSingleton<GraphQLClientFactory>();
+        builder.Services.AddGraphQLClient<IDataFetchService<Member>, MemberGraphQLService>("graphql_members");
+        builder.Services.AddGraphQLClient<IDataFetchService<Concert>, ConcertGraphQLService>("graphql_planning");
+        builder.Services.AddGraphQLClient<IDataFetchService<Rehearsal>, RehearsalGraphQLService>("graphql_planning");
     }
 
     private static void ConfigureLogging(WebApplicationBuilder builder)
@@ -102,8 +122,7 @@ public class Program
 
     private static void ConfigureBackgroundServices(WebApplicationBuilder builder)
     {
-        builder.Services.AddScoped<IDataUpdater, KafkaGraphQLUpdater>();
-        builder.Services.AddScoped<IGraphQLClientFactory, GraphQLClientFactory>();
+        builder.Services.AddScoped<IDataUpdater, KafkaUpdater>();
         builder.Services.AddHostedService<DataUpdaterBackgroundService>();
         builder.Services.AddHostedService<DataFetchService>();
     }

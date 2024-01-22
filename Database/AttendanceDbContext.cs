@@ -1,5 +1,5 @@
-using AttendanceService.Common;
 using AttendanceService.Concerts;
+using AttendanceService.Members;
 using AttendanceService.Rehearsals;
 using Microsoft.EntityFrameworkCore;
 

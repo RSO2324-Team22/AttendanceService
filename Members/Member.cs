@@ -1,4 +1,4 @@
-namespace AttendanceService.Common;
+namespace AttendanceService.Members;
 
 public class Member {
     public int Id { get; set; }

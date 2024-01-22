@@ -1,5 +1,6 @@
 using AttendanceService.Common;
 using AttendanceService.Database;
+using AttendanceService.Members;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;

@@ -1,4 +1,4 @@
-using AttendanceService.Common;
+using AttendanceService.Members;
 
 namespace AttendanceService.Rehearsals;
 
