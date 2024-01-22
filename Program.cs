@@ -3,6 +3,7 @@ using AttendanceService.Common;
 using AttendanceService.Concerts;
 using AttendanceService.Database;
 using AttendanceService.GraphQL;
+using AttendanceService.Kafka;
 using AttendanceService.Members;
 using AttendanceService.Rehearsals;
 using Confluent.Kafka;
@@ -15,7 +16,6 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OpenTelemetry.Metrics;
 using Polly;
 using Polly.Extensions.Http;
-using Polly.Retry;
 using Serilog;
 using Serilog.Events;
 
@@ -132,9 +132,9 @@ public class Program
         string? kafkaUrl = builder.Configuration["KAFKA_URL"];
         builder.Services.AddKafkaClient()
             .Configure(options => {
-                options.Configure(new ProducerConfig {
+                options.Configure(new ConsumerConfig {
                     BootstrapServers = kafkaUrl
-                });
+                }).Serialize(new JsonMessageSerializer<KafkaMessage>());
             });
     }
 

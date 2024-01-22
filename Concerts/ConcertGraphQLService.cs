@@ -46,7 +46,7 @@ public class ConcertGraphQLService : IDataFetchService<Concert> {
             throw new OperationCanceledException();
         }
 
-        this._logger.LogInformation("Adding concert {id}", concertId);
+        this._logger.LogInformation("Adding concert {0}", concertId);
         try {
             GraphQLRequest query = MakeConcertQuery(concertId);
             GraphQLResponse<Concert> response = 
