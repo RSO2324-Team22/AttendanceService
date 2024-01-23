@@ -203,11 +203,13 @@ public class Program
 
     private static void ConfigureSwaggerUI(WebApplication app)
     {
+        string app_base = app.Configuration["APP_BASE"] ?? "";
+
         // Configure the HTTP request pipeline.
         app.UseSwagger();
         app.UseSwaggerUI(options =>
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+            options.SwaggerEndpoint($"{app_base}/swagger/v1/swagger.json", "v1");
             options.RoutePrefix = "openapi";
             options.DocumentTitle = "OpenAPI documentation";
         });
