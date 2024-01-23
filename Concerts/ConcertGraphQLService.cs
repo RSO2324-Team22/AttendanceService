@@ -97,7 +97,7 @@ public class ConcertGraphQLService : IDataFetchService<Concert> {
             GraphQLRequest query = MakeConcertQuery(concertId);
             GraphQLResponse<Concert> response = 
                 await this._graphQLClient.SendQueryAsync<Concert>(query);
-            concert.Name = response.Data.Name;
+            concert.Title = response.Data.Title;
             this._dbContext.Add(concert);
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Edited concert {id}", concertId);
@@ -111,9 +111,10 @@ public class ConcertGraphQLService : IDataFetchService<Concert> {
     private static GraphQLRequest AllConcertsQuery = new GraphQLRequest {
         Query = @"
             query GetAllConcerts {
-                concerts {
-                    All {
-                        Id Name 
+                concertGraph {
+                    all {
+                        id
+                        title
                     }
                 }
             }",
@@ -124,11 +125,14 @@ public class ConcertGraphQLService : IDataFetchService<Concert> {
         return new GraphQLRequest {
             Query = @"
                 query GetConcert($id: ID) {
-                    Concert(id: $id) {
-                        Id Name 
+                    concertGraph {
+                        concert(id: $id) {
+                            id
+                            title
+                        }
                     }
                 }",
-            OperationName = "GetConcerts",
+            OperationName = "GetConcert",
             Variables = new {
                 id = id
             }

@@ -97,7 +97,7 @@ public class RehearsalGraphQLService : IDataFetchService<Rehearsal> {
             GraphQLRequest query = MakeRehearsalQuery(concertId);
             GraphQLResponse<Rehearsal> response = 
                 await this._graphQLClient.SendQueryAsync<Rehearsal>(query);
-            concert.Name = response.Data.Name;
+            concert.Title = response.Data.Title;
             this._dbContext.Add(concert);
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Edited concert {id}", concertId);
@@ -110,10 +110,11 @@ public class RehearsalGraphQLService : IDataFetchService<Rehearsal> {
 
     private static GraphQLRequest AllRehearsalsQuery = new GraphQLRequest {
         Query = @"
-            query GetAllRehearsals {
-                concerts {
-                    All {
-                        Id Name 
+            query RehearsalGraph {
+                rehearsalGraph {
+                    all {
+                        id
+                        title
                     }
                 }
             }",
@@ -124,8 +125,11 @@ public class RehearsalGraphQLService : IDataFetchService<Rehearsal> {
         return new GraphQLRequest {
             Query = @"
                 query GetRehearsal($id: ID) {
-                    Rehearsal(id: $id) {
-                        Id Name 
+                    rehearsalGraph {
+                        rehearsal(id: $id) {
+                            id
+                            title
+                        }
                     }
                 }",
             OperationName = "GetRehearsals",
