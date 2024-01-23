@@ -31,6 +31,10 @@ public class MemberGraphQLService : IDataFetchService<Member> {
         try {
             GraphQLResponse<List<Member>> response = 
                 await this._graphQLClient.SendQueryAsync<List<Member>>(AllMembersQuery);
+            if (response.Errors is not null) {
+                this._logger.LogError("GraphQL error while fetching members");
+            } 
+
             List<Member> members = response.Data ?? new List<Member>();
             this._dbContext.AddRange(members);
             await this._dbContext.SaveChangesAsync();
@@ -111,9 +115,10 @@ public class MemberGraphQLService : IDataFetchService<Member> {
     private static GraphQLRequest AllMembersQuery = new GraphQLRequest {
         Query = @"
             query GetAllMembers {
-                members {
-                    All {
-                        Id Name 
+                membersGraph {
+                    all {
+                        id
+                        name
                     }
                 }
             }",
@@ -124,8 +129,11 @@ public class MemberGraphQLService : IDataFetchService<Member> {
         return new GraphQLRequest {
             Query = @"
                 query GetMember($id: ID) {
-                    Member(id: $id) {
-                        Id Name 
+                    membersGraph {
+                        member(id: $id) {
+                            id
+                            name
+                        }
                     }
                 }",
             OperationName = "GetMember",

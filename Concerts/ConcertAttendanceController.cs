@@ -32,18 +32,26 @@ public class ConcertAttendanceController : ControllerBase {
 
     [HttpGet]
     [Route("concert/{concertId}")]
-    [Route("{concertId}")]
     [SwaggerOperation("GetAttendancesForConcert")]
-    public async Task<IEnumerable<ConcertAttendance>> GetAttendancesForConcert(int concertId) {
+    public async Task<ActionResult<IEnumerable<ConcertAttendance>>> GetAttendancesForConcert(int concertId) {
         this._logger.LogInformation("Getting attendances for concert {id}", concertId);
-        return await this._dbContext.ConcertAttendances
+        Concert? concert = await this._dbContext.Concerts
+            .Where(c => c.Id == concertId)
+            .SingleOrDefaultAsync();
+        
+        if (concert is null) {
+            return NotFound();
+        }
+
+        List<ConcertAttendance> attendances = await this._dbContext.ConcertAttendances
             .Where(ca => ca.Concert.Id == concertId)
             .ToListAsync();
+
+        return Ok(attendances);
     }
 
     [HttpPost]
     [Route("concert/{concertId}")]
-    [Route("{concertId}")]
     [SwaggerOperation("CreateAttendances")]
     public async Task<ActionResult<IEnumerable<ConcertAttendance>>> CreateAttendances(
             int concertId, 
@@ -51,9 +59,13 @@ public class ConcertAttendanceController : ControllerBase {
         this._logger.LogInformation("Adding attendance for concert {id}", concertId);
         try
         {
-            Concert concert = await this._dbContext.Concerts
+            Concert? concert = await this._dbContext.Concerts
                 .Where(c => c.Id == concertId)
-                .SingleAsync();
+                .SingleOrDefaultAsync();
+            
+            if (concert is null) {
+                return NotFound();
+            }
 
             List<int> memberIds = models
                 .Select(m => m.MemberId)
@@ -97,7 +109,6 @@ public class ConcertAttendanceController : ControllerBase {
 
     [HttpPatch]
     [Route("concert/{concertId}")]
-    [Route("{concertId}")]
     [SwaggerOperation("EditAttendances")]
     public async Task<ActionResult<IEnumerable<ConcertAttendance>>> EditAttendances(
             int concertId, 
@@ -105,9 +116,13 @@ public class ConcertAttendanceController : ControllerBase {
         this._logger.LogInformation("Editing attendance for concert {id}", concertId);
         try
         {
-            Concert concert = await this._dbContext.Concerts
+            Concert? concert = await this._dbContext.Concerts
                 .Where(c => c.Id == concertId)
-                .SingleAsync();
+                .SingleOrDefaultAsync();
+
+            if (concert is null) {
+                return NotFound();
+            }
 
             List<int> memberIds = models
                 .Select(m => m.MemberId)

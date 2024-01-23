@@ -18,6 +18,7 @@ using Polly;
 using Polly.Extensions.Http;
 using Serilog;
 using Serilog.Events;
+using Serilog.HttpClient.Extensions;
 
 public class Program
 {
@@ -68,17 +69,21 @@ public class Program
             .HandleTransientHttpError()
             .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
 
+        string members_url = builder.Configuration["MembersService:GraphQL:Url"]
+            ?? throw new Exception("MembersService:GraphQL:Url config value is missing");
         builder.Services.AddHttpClient("graphql_members", client => {
-            client.BaseAddress = new Uri(builder.Configuration["MembersService:GraphQL:Url"]
-                ?? throw new Exception("MembersService:GraphQL:Url config value is missing"));
+            client.BaseAddress = new Uri(members_url);
         }).AddPolicyHandler(retryPolicy)
-          .AddPolicyHandler(circuitBreakerPolicy);
+          .AddPolicyHandler(circuitBreakerPolicy)
+          .LogRequestResponse();
 
+        string planning_url = builder.Configuration["PlanningService:GraphQL:Url"]
+            ?? throw new Exception("PlanningService:GraphQL:Url config value is missing");
         builder.Services.AddHttpClient("graphql_planning", client => {
-            client.BaseAddress = new Uri(builder.Configuration["PlanningService:GraphQL:Url"]
-                ?? throw new Exception("PlanningService:GraphQL:Url config value is missing"));
+            client.BaseAddress = new Uri(planning_url);
         }).AddPolicyHandler(retryPolicy)
-          .AddPolicyHandler(circuitBreakerPolicy);
+          .AddPolicyHandler(circuitBreakerPolicy)
+          .LogRequestResponse();
     }
 
     private static void ConfigureGraphQLClients(WebApplicationBuilder builder) {
