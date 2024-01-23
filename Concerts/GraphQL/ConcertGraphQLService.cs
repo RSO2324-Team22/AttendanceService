@@ -4,7 +4,7 @@ using GraphQL;
 using GraphQL.Client.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
-namespace AttendanceService.Concerts;
+namespace AttendanceService.Concerts.GraphQL;
 
 public class ConcertGraphQLService : IDataFetchService<Concert> {
     private readonly ILogger<ConcertGraphQLService> _logger;
@@ -28,9 +28,10 @@ public class ConcertGraphQLService : IDataFetchService<Concert> {
 
         this._logger.LogInformation("Fetching concerts");
         try {
-            GraphQLResponse<List<Concert>> response = 
-                await this._graphQLClient.SendQueryAsync<List<Concert>>(AllConcertsQuery);
-            List<Concert> concerts = response.Data ?? new List<Concert>();
+            GraphQLResponse<ConcertGraphResponse> response = 
+                await this._graphQLClient.SendQueryAsync<ConcertGraphResponse>(AllConcertsQuery);
+
+            List<Concert> concerts = response.Data.ConcertGraph.All ?? new List<Concert>();
             this._dbContext.AddRange(concerts);
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Successfully fetched concerts");
@@ -49,9 +50,15 @@ public class ConcertGraphQLService : IDataFetchService<Concert> {
         this._logger.LogInformation("Adding concert {0}", concertId);
         try {
             GraphQLRequest query = MakeConcertQuery(concertId);
-            GraphQLResponse<Concert> response = 
-                await this._graphQLClient.SendQueryAsync<Concert>(query);
-            Concert concert = response.Data;
+            GraphQLResponse<ConcertGraphResponse> response = 
+                await this._graphQLClient.SendQueryAsync<ConcertGraphResponse>(query);
+
+            if (response.Errors is not null) {
+                this._logger.LogError("GraphQL error while fetching concert {id}.", concertId);
+                return;
+            }
+
+            Concert concert = response.Data.ConcertGraph.Concert!;
             this._dbContext.Add(concert);
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Added concert {id}", concertId);

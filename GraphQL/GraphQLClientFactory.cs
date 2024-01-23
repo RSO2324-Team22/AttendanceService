@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.Json;
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Abstractions.Websocket;
 using GraphQL.Client.Http;
@@ -40,24 +41,21 @@ public class GraphQLClientFactory {
             IGraphQLWebsocketJsonSerializer? serializer = null,
             Action<GraphQLHttpClientOptions>? configure = null) {
         HttpClient httpClient;
-        if (httpClientName is null)
-        {
+        if (httpClientName is null) {
             httpClient = this._httpClientFactory.CreateClient();
         }
-        else
-        {
+        else {
             httpClient = this._httpClientFactory.CreateClient(httpClientName);
         }
 
         GraphQLHttpClientOptions options = new GraphQLHttpClientOptions();
-        if (configure is not null)
-        {
+        if (configure is not null) {
             configure(options);
         }
 
-        if (serializer is null)
-        {
-            serializer = new SystemTextJsonSerializer();
+        if (serializer is null) {
+            serializer = new SystemTextJsonSerializer(
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web));
         }
 
         GraphQLHttpClient graphQLClient =
@@ -86,12 +84,10 @@ public class GraphQLClientFactory {
         {
             Type paramType = parameter.ParameterType;
             if (paramType == typeof(IGraphQLClient)
-                    || paramType == typeof(GraphQLHttpClient))
-            {
+                    || paramType == typeof(GraphQLHttpClient)) {
                 parameterInstances.Add(graphQLClient);
             }
-            else
-            {
+            else {
                 object instance = serviceProvider.GetRequiredService(paramType);
                 parameterInstances.Add(instance);
             }
@@ -100,8 +96,7 @@ public class GraphQLClientFactory {
         TImplementation? implementationInstance = (TImplementation?)Activator.CreateInstance(
             implementationType, parameterInstances.ToArray());
 
-        if (implementationInstance is null)
-        {
+        if (implementationInstance is null) {
             this._logger.LogError("{0} could not be instaniated.", nameof(TImplementation));
             throw new Exception($"{nameof(TImplementation)} could not be instaniated.");
         }
@@ -124,7 +119,7 @@ public static class GraphQLClientFactoryExtensions {
 
             return factory.CreateImplementation<TService, TImplementation>(
                     serviceProvider, httpClientName, serializer, configure);
-    }); 
-}
+        }); 
+    }
 }
 

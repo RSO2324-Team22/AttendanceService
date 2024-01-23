@@ -1,11 +1,14 @@
 using AttendanceService.Background;
 using AttendanceService.Common;
 using AttendanceService.Concerts;
+using AttendanceService.Concerts.GraphQL;
 using AttendanceService.Database;
 using AttendanceService.GraphQL;
 using AttendanceService.Kafka;
 using AttendanceService.Members;
+using AttendanceService.Members.GraphQL;
 using AttendanceService.Rehearsals;
+using AttendanceService.Rehearsals.GraphQL;
 using Confluent.Kafka;
 using HealthChecks.ApplicationStatus.DependencyInjection;
 using HealthChecks.UI.Client;

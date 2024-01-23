@@ -1,11 +1,10 @@
 using AttendanceService.Common;
 using AttendanceService.Database;
-using Confluent.Kafka;
 using GraphQL;
 using GraphQL.Client.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
-namespace AttendanceService.Members;
+namespace AttendanceService.Members.GraphQL;
 
 public class MemberGraphQLService : IDataFetchService<Member> {
     private readonly ILogger<MemberGraphQLService> _logger;
@@ -29,13 +28,15 @@ public class MemberGraphQLService : IDataFetchService<Member> {
 
         this._logger.LogInformation("Fetching members");
         try {
-            GraphQLResponse<List<Member>> response = 
-                await this._graphQLClient.SendQueryAsync<List<Member>>(AllMembersQuery);
+            GraphQLResponse<MemberGraphResponse> response = 
+                await this._graphQLClient.SendQueryAsync<MemberGraphResponse>(AllMembersQuery);
+
             if (response.Errors is not null) {
                 this._logger.LogError("GraphQL error while fetching members");
+                return;
             } 
 
-            List<Member> members = response.Data ?? new List<Member>();
+            List<Member> members = response.Data.MemberGraph.All ?? new List<Member>();
             this._dbContext.AddRange(members);
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Successfully fetched members");
@@ -54,9 +55,16 @@ public class MemberGraphQLService : IDataFetchService<Member> {
         this._logger.LogInformation("Adding member {id}", memberId);
         try {
             GraphQLRequest query = MakeMemberQuery(memberId);
-            GraphQLResponse<Member> response = 
-                await this._graphQLClient.SendQueryAsync<Member>(query);
-            Member member = response.Data;
+            GraphQLResponse<MemberGraphResponse> response = 
+                await this._graphQLClient.SendQueryAsync<MemberGraphResponse>(query);
+            
+
+            if (response.Errors is not null) {
+                this._logger.LogError("GraphQL error while fetching member {id}", memberId);
+                return;
+            } 
+
+            Member member = response.Data.MemberGraph.Member!;
             this._dbContext.Add(member);
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Added member {id}", memberId);
