@@ -56,6 +56,10 @@ public class Program
     }
 
     private static void ConfigureHttpClients(WebApplicationBuilder builder) {
+        builder.Services.AddHeaderPropagation(options => {
+            options.Headers.Add("X-Correlation-Id");
+        });
+
         IAsyncPolicy<HttpResponseMessage> retryPolicy = HttpPolicyExtensions
             .HandleTransientHttpError()
             .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
@@ -64,22 +68,16 @@ public class Program
             .HandleTransientHttpError()
             .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
 
-        builder.Services.AddHeaderPropagation(options => {
-            options.Headers.Add("X-Correlation-Id");
-        });
-
         builder.Services.AddHttpClient("graphql_members", client => {
             client.BaseAddress = new Uri(builder.Configuration["MembersService:GraphQL:Url"]
                 ?? throw new Exception("MembersService:GraphQL:Url config value is missing"));
-        }).AddHeaderPropagation()
-          .AddPolicyHandler(retryPolicy)
+        }).AddPolicyHandler(retryPolicy)
           .AddPolicyHandler(circuitBreakerPolicy);
 
         builder.Services.AddHttpClient("graphql_planning", client => {
             client.BaseAddress = new Uri(builder.Configuration["PlanningService:GraphQL:Url"]
                 ?? throw new Exception("PlanningService:GraphQL:Url config value is missing"));
-        }).AddHeaderPropagation()
-          .AddPolicyHandler(retryPolicy)
+        }).AddPolicyHandler(retryPolicy)
           .AddPolicyHandler(circuitBreakerPolicy);
     }
 
