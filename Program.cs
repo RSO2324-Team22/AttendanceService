@@ -129,8 +129,8 @@ public class Program
     private static void ConfigureBackgroundServices(WebApplicationBuilder builder)
     {
         builder.Services.AddScoped<IDataUpdater, KafkaUpdater>();
-        builder.Services.AddHostedService<DataUpdaterBackgroundService>();
         builder.Services.AddHostedService<DataFetchService>();
+        builder.Services.AddHostedService<DataUpdaterBackgroundService>();
     }
 
     private static void ConfigureKafka(WebApplicationBuilder builder)

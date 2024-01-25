@@ -18,5 +18,6 @@ public class AttendanceDbContext : DbContext {
             DbContextOptions<AttendanceDbContext> options,
             ILogger<AttendanceDbContext> logger) : base(options) {
         this._logger = logger;
+        this.ChangeTracker.LazyLoadingEnabled = false;
     }
 }

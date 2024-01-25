@@ -43,6 +43,7 @@ public class MemberGraphQLService : IDataFetchService<Member> {
         }
         catch (Exception e) {
             this._logger.LogError(e, "Error while fetching members");
+            throw;
         }
     }
 
@@ -123,7 +124,7 @@ public class MemberGraphQLService : IDataFetchService<Member> {
     private static GraphQLRequest AllMembersQuery = new GraphQLRequest {
         Query = @"
             query GetAllMembers {
-                membersGraph {
+                memberGraph {
                     all {
                         id
                         name
@@ -137,7 +138,7 @@ public class MemberGraphQLService : IDataFetchService<Member> {
         return new GraphQLRequest {
             Query = @"
                 query GetMember($id: ID) {
-                    membersGraph {
+                    memberGraph {
                         member(id: $id) {
                             id
                             name

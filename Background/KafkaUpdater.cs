@@ -46,7 +46,7 @@ public class KafkaUpdater : IDataUpdater {
 
     public async Task LoopAsync(CancellationToken stoppingToken) {
         if (stoppingToken.IsCancellationRequested) {
-            throw new OperationCanceledException();
+            return;
         }
 
         string[] topics = new string[] { "members", "concerts", "rehearsals" };
@@ -66,12 +66,12 @@ public class KafkaUpdater : IDataUpdater {
         this._logger.LogInformation("Kafka consumer loop has stopped");
     }
 
-    private async Task ProcessMessage(
+    public async Task ProcessMessage(
             string topic,
             Message<string, KafkaMessage> message, 
             CancellationToken stoppingToken) {
         if (stoppingToken.IsCancellationRequested) {
-            throw new OperationCanceledException();
+            return;
         }
 
         switch (topic) {
@@ -91,7 +91,7 @@ public class KafkaUpdater : IDataUpdater {
             Message<string, KafkaMessage> message, 
             CancellationToken stoppingToken) {
         if (stoppingToken.IsCancellationRequested) {
-            throw new OperationCanceledException();
+            return;
         }
 
         string key = message.Key;
@@ -113,7 +113,7 @@ public class KafkaUpdater : IDataUpdater {
             Message<string, KafkaMessage> message,
             CancellationToken stoppingToken) {
         if (stoppingToken.IsCancellationRequested) {
-            throw new OperationCanceledException();
+            return;
         }
 
         string key = message.Key;
@@ -135,7 +135,7 @@ public class KafkaUpdater : IDataUpdater {
             Message<string, KafkaMessage> message,
             CancellationToken stoppingToken) {
         if (stoppingToken.IsCancellationRequested) {
-            throw new OperationCanceledException();
+            return;
         }
 
         string key = message.Key;

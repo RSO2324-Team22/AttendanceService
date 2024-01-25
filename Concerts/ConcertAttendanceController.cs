@@ -45,6 +45,7 @@ public class ConcertAttendanceController : ControllerBase {
 
         List<ConcertAttendance> attendances = await this._dbContext.ConcertAttendances
             .Where(ca => ca.Concert.Id == concertId)
+            .Include(ca => ca.Member)
             .ToListAsync();
 
         return Ok(attendances);
@@ -75,35 +76,39 @@ public class ConcertAttendanceController : ControllerBase {
                 .Where(m => memberIds.Contains(m.Id))
                 .ToListAsync();
 
-            List<ConcertAttendance> attendances = new List<ConcertAttendance>();
+            List<ConcertAttendance> attendances = await this._dbContext.ConcertAttendances
+                .Where(a => a.Concert.Id == concertId)
+                .ToListAsync();
+
             foreach (Member member in members) {
-                CreateAttendanceModel? model = models.Find(m => m.MemberId == member.Id);
-                if (model is null) {
-                    this._logger.LogInformation("Attendance for concert {concertId} and member {memberId} was not given",
-                                                concertId, member.Id);
-                    return BadRequest($"Attendance for concert {concertId} and member {member.Id} was not given");
+                CreateAttendanceModel model = models.Find(m => m.MemberId == member.Id)!;
+                ConcertAttendance attendance = new ConcertAttendance() {
+                    Member = member,
+                    Concert = concert,
+                    IsPresent = model.IsPresent,
+                    ReasonForAbsence = model.ReasonForAbsence
+                };
+
+                ConcertAttendance? existingAttendance = attendances
+                    .Where(a => a.Member == member)
+                    .FirstOrDefault();
+
+                if (existingAttendance is not null) {
+                    attendances.Remove(existingAttendance);
                 }
-                else {
-                    ConcertAttendance attendance = new ConcertAttendance() {
-                        Member = member,
-                        Concert = concert,
-                        IsPresent = model.IsPresent,
-                        ReasonForAbsence = model.ReasonForAbsence
-                    };
-                    this._dbContext.Add(attendance);
-                    attendances.Add(attendance);
-                }
+                attendances.Add(attendance);
+                this._dbContext.Add(attendance);
             }
 
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Created new concert attendance");
             return CreatedAtAction(nameof(GetAttendancesForConcert),
-                                   new { concertId = concertId });
+                                   new { concertId = concertId }, attendances);
         }
         catch (Exception e)
         {
             this._logger.LogError(e, "There was an error adding concert attendance for concert {id}", concertId);
-            return BadRequest($"There was an error adding concert attendance for concert {concertId}");
+            throw;
         }
     }
 
@@ -137,23 +142,21 @@ public class ConcertAttendanceController : ControllerBase {
                 .ToListAsync();
 
             foreach (Member member in members) {
-                CreateAttendanceModel? model = models.Find(m => m.MemberId == member.Id);
-                if (model is null) {
-                    this._logger.LogInformation("Attendance for concert {concertId} and member {memberId} was not given",
-                                                concertId, member.Id);
-                    return BadRequest($"Attendance for concert {concertId} and member {member.Id} was not given");
+                CreateAttendanceModel model = models.Find(m => m.MemberId == member.Id)!;
+                ConcertAttendance? attendance = attendances.Find(a => a.Member == member);
+                if (attendance is null) {
+                    attendance = new ConcertAttendance() {
+                        Member = member,
+                        Concert = concert,
+                        IsPresent = model.IsPresent,
+                        ReasonForAbsence = model.ReasonForAbsence
+                    };
+
+                    this._dbContext.Add(attendance);
                 }
                 else {
-                    ConcertAttendance? attendance = attendances.Find(a => a.Member == member);
-                    if (attendance is null) {
-                        this._logger.LogInformation("Attendance for concert {concertId} and member {memberId} was not found",
-                                                    concertId, member.Id);
-                        return BadRequest($"Attendance for concert {concertId} and meber {member.Id} was not found");
-                    }
-                    else {
-                        attendance.IsPresent = model.IsPresent;
-                        attendance.ReasonForAbsence = model.ReasonForAbsence;
-                    }
+                    attendance.IsPresent = model.IsPresent;
+                    attendance.ReasonForAbsence = model.ReasonForAbsence;
                 }
             }
 
@@ -164,7 +167,7 @@ public class ConcertAttendanceController : ControllerBase {
         catch (Exception e)
         {
             this._logger.LogError(e, "There was an error editing concert attendance for concert {id}", concertId);
-            return BadRequest($"There was an error deleting concert attendance {concertId}");
+            throw;
         }
     }
 }

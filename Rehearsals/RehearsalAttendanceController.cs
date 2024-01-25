@@ -47,9 +47,13 @@ public class RehearsalAttendanceController : ControllerBase {
         this._logger.LogInformation("Adding attendance for rehearsal {id}", rehearsalId);
         try
         {
-            Rehearsal rehearsal = await this._dbContext.Rehearsals
+            Rehearsal? rehearsal = await this._dbContext.Rehearsals
                 .Where(r => r.Id == rehearsalId)
-                .SingleAsync();
+                .SingleOrDefaultAsync();
+
+            if (rehearsal is null) {
+                return NotFound();
+            }
 
             List<int> memberIds = models
                 .Select(m => m.MemberId)
@@ -81,12 +85,13 @@ public class RehearsalAttendanceController : ControllerBase {
 
             await this._dbContext.SaveChangesAsync();
             this._logger.LogInformation("Created new rehearsal attendance");
-            return Created(nameof(Index), attendances);
+            return CreatedAtAction(nameof(GetAttendancesForRehearsal), 
+                                   new { rehearsalId = rehearsalId }, attendances);
         }
         catch (Exception e)
         {
             this._logger.LogError(e, "There was an error adding attendance for rehearsal {id}", rehearsalId);
-            return BadRequest("There was an error adding attendance for rehearsal {rehearsalId}");
+            throw;
         }
     }
 
@@ -99,9 +104,13 @@ public class RehearsalAttendanceController : ControllerBase {
         this._logger.LogInformation("Editing attendance for rehearsal {id}", rehearsalId);
         try
         {
-            Rehearsal rehearsal = await this._dbContext.Rehearsals
+            Rehearsal? rehearsal = await this._dbContext.Rehearsals
                 .Where(r => r.Id == rehearsalId)
-                .SingleAsync();
+                .SingleOrDefaultAsync();
+
+            if (rehearsal is null) {
+                return NotFound();
+            }
 
             List<int> memberIds = models
                 .Select(m => m.MemberId)
@@ -143,7 +152,7 @@ public class RehearsalAttendanceController : ControllerBase {
         catch (Exception e)
         {
             this._logger.LogError(e, "There was an error editing attendance for rehearsal {id}", rehearsalId);
-            return BadRequest($"There was an error deleting attendance for rehearsal {rehearsalId}");
+            throw;
         }
     }
 }
